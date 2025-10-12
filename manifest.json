@@ -1,7 +1,7 @@
 {
 	"name": "PlanetWormhole",
-	"version_number": "2.0.0",
+	"version_number": "2.0.1",
 	"website_url": "https://github.com/essium/PlanetWormhole",
-	"description": "Transfer items within each planet",
+	"description": "(Updated version) Transfer items within each planet 行星虫洞:自动运输行星内的货物",
 	"dependencies":["xiaoye97-BepInEx-5.4.17"]
 }

@@ -1,5 +1,6 @@
-# PlanetWormhole
+# PlanetWormhole (Updated version)  
 
+Original mod: [PlanetWormhole](https://thunderstore.io/c/dyson-sphere-program/p/essium/PlanetWormhole/) by essium    
 Automatically transfer cargos within a planet. You do not need planetary logistics now!
 
 ## Configurations
@@ -9,9 +10,10 @@ Automatically transfer cargos within a planet. You do not need planetary logisti
 |`EnableInterstellar`|true|enable auto interstellar transportation|
 
 ---
-# 行星虫洞
+# 行星虫洞(更新版)  
 
-自动运输行星内的货物，你不再需要行星内物流系统了
+原mod: [PlanetWormhole](https://thunderstore.io/c/dyson-sphere-program/p/essium/PlanetWormhole/) 作者: essium    
+自动运输分派行星内的货物，你不再需要行星内物流系统了
 
 ## 配置
 ||默认值|描述|
@@ -19,6 +21,13 @@ Automatically transfer cargos within a planet. You do not need planetary logisti
 |`EnableInterstellar`|true|启动自动星际物流|
 
 ## ChangeLog
+
+### 2.0.1
+
+Fix for game 0.10.33.27026  
+
+<details>
+<summary>Original Mod Changelog</summary>
 
 ### 2.0.0
 
@@ -70,3 +79,5 @@ Refresh storage
 ### 1.0.0
 
 Initial version of this plugin
+
+</details>

@@ -14,7 +14,7 @@ namespace PlanetWormhole
     {
         private const string package = "essium.DSP.PlanetWormhole";
         private const string plugin = "PlanetWormhole";
-        private const string version = "2.0.0";
+        private const string version = "2.0.1";
 
         private static List<LocalPlanet> planetWormhole;
         private static Cosmic globalWormhole;
@@ -23,52 +23,56 @@ namespace PlanetWormhole
         private static ConfigEntry<bool> enableInterstellar;
         private Harmony harmony;
 
-        [HarmonyPostfix, HarmonyPatch(typeof(GameData), "GameTick")]
-        private static void _postfix_GameData_GameTick(GameData __instance,
-            long time)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(GameLogic), nameof(GameLogic.OnFactoryFrameEnd))]
+        private static void _postfix_GameData_GameTick(GameLogic __instance)
         {
             if (GameMain.instance.isMenuDemo)
             {
                 return;
             }
-            PerformanceMonitor.BeginSample(ECpuWorkEntry.Belt);
-            while(planetWormhole.Count < __instance.factoryCount)
+            DeepProfiler.BeginSample(DPEntry.Belt, -1, -1L);
+            while (planetWormhole.Count < __instance.factoryCount)
             {
                 planetWormhole.Add(new LocalPlanet());
             }
-            globalWormhole.SetData(__instance);
+            globalWormhole.SetData(__instance.data);
             globalWormhole.BeforeLocal();
-            for (int i = (int)(time % PERIOD); i < __instance.factoryCount; i+=PERIOD)
+            for (int i = (int)(__instance.timei % PERIOD); i < __instance.factoryCount; i+=PERIOD)
             {
                 planetWormhole[i].SetFactory(__instance.factories[i]);
                 planetWormhole[i].SetCosmic(globalWormhole);
                 ThreadPool.QueueUserWorkItem(planetWormhole[i].PatchPlanet);
             }
-            for(int i = (int)(time % PERIOD); i < __instance.factoryCount; i += PERIOD)
+            for(int i = (int)(__instance.timei % PERIOD); i < __instance.factoryCount; i += PERIOD)
             {
                 planetWormhole[i].completeSignal.WaitOne();
             }
             globalWormhole.AfterLocal();
-            PerformanceMonitor.EndSample(ECpuWorkEntry.Belt);
+            DeepProfiler.EndSample(-1, -2L);
         }
-        [HarmonyPrefix, HarmonyPatch(typeof(ProductionStatistics), "GameTick")]
-        private static void _postfix_ProductionStatistics_GameTick(ProductionStatistics __instance,
-            long time)
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ProductionStatistics), nameof(ProductionStatistics.GameTick))]
+        private static void _prefix_ProductionStatistics_GameTick(ProductionStatistics __instance)
         {
-            if (GameMain.instance.isMenuDemo)
-            {
-                return;
-            }
             for (int i = 0; i < __instance.gameData.factoryCount; i++)
             {
-                if (planetWormhole.Count > i)
-                {
-                    if (planetWormhole[i].consumedProliferator > 0)
-                    {
-                        __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferator;
-                        planetWormhole[i].consumedProliferator = 0;
-                    }
-                }
+                if (i > planetWormhole.Count || planetWormhole[i].consumedProliferator <= 0) continue;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferator;
+                planetWormhole[i].consumedProliferator = 0;
+            }
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(ProductionStatistics), nameof(ProductionStatistics.GameTick_Parallel))]
+        private static void _prefix_ProductionStatistics_GameTick_Parallel(ProductionStatistics __instance, int threadOrdinal, int threadCount)
+        {
+            for (int i = (threadOrdinal + 3) % threadCount; i < __instance.gameData.factoryCount; i += threadCount)
+            {
+                if (i > planetWormhole.Count || planetWormhole[i].consumedProliferator <= 0) continue;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferator;
+                planetWormhole[i].consumedProliferator = 0;
             }
         }
 
@@ -89,7 +93,7 @@ namespace PlanetWormhole
 
         public void OnDestroy()
         {
-            harmony.UnpatchAll();
+            harmony.UnpatchSelf();
             BepInEx.Logging.Logger.Sources.Remove(logger);
         }
 
