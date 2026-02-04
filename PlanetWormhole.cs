@@ -14,7 +14,7 @@ namespace PlanetWormhole
     {
         private const string package = "essium.DSP.PlanetWormhole";
         private const string plugin = "PlanetWormhole";
-        private const string version = "2.0.1";
+        private const string version = "2.0.2";
 
         private static List<LocalPlanet> planetWormhole;
         private static Cosmic globalWormhole;
@@ -99,7 +99,7 @@ namespace PlanetWormhole
 
         private void BindConfig()
         {
-            enableInterstellar = Config.Bind("Config", "EnableInterstellar", true, "enable auto interstellar transportation");
+            enableInterstellar = Config.Bind("Config", "EnableInterstellar", false, "enable auto interstellar transportation");
         }
 
         public static bool EnableInterstellar()

@@ -93,20 +93,21 @@ namespace PlanetWormhole.Data
             {
                 if (pool[i].id == i && pool[i].recipeId > 0)
                 {
-                    for (int j = 0; j < pool[i].produced.Length; j++)
+                    ref var ptr = ref pool[i];
+                    for (int j = 0; j < ptr.produced.Length; j++)
                     {
-                        if (pool[i].produced[j] > 0)
+                        if (ptr.produced[j] > 0)
                         {
-                            produced[pool[i].products[j]] += pool[i].produced[j];
+                            produced[ptr.recipeExecuteData.products[j]] += ptr.produced[j];
                         }
                     }
-                    for (int j = 0; j < pool[i].requireCounts.Length; j++)
+                    for (int j = 0; j < ptr.recipeExecuteData.requireCounts.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int count = _positive(3 * pool[i].requireCounts[j] - pool[i].served[j]);
+                            int count = _positive(3 * ptr.recipeExecuteData.requireCounts[j] - ptr.served[j]);
                             sumSpray += count;
-                            served[pool[i].needs[j]] += count;
+                            served[ptr.needs[j]] += count;
                         }
                     }
                 }
@@ -122,64 +123,65 @@ namespace PlanetWormhole.Data
                 int i = (int)((r + k) % (factory.factorySystem.assemblerCursor - 1)) + 1;
                 if (pool[i].id == i && pool[i].recipeId > 0)
                 {
-                    for (int j = 0; j < pool[i].produced.Length; j++)
+                    ref var ptr = ref pool[i];
+                    for (int j = 0; j < ptr.produced.Length; j++)
                     {
-                        if (pool[i].produced[j] > 0)
+                        if (ptr.produced[j] > 0)
                         {
-                            int itemId = pool[i].products[j];
-                            _produce(itemId, served, ref pool[i].produced[j], ref count);
+                            int itemId = ptr.recipeExecuteData.products[j];
+                            _produce(itemId, served, ref ptr.produced[j], ref count);
                         }
                     }
-                    if (pool[i].produced.Length > 1)
+                    if (ptr.produced.Length > 1)
                     {
-                        int len = pool[i].produced.Length;
-                        switch (pool[i].recipeType)
+                        int len = ptr.produced.Length;
+                        switch (ptr.recipeType)
                         {
                             case ERecipeType.Smelt:
                                 for (int j = 0; j < len; j++)
                                 {
-                                    if (pool[i].produced[j] + pool[i].productCounts[j] > 100
-                                        && buffer[pool[i].products[j]] < BUFFER_SIZE)
+                                    if (ptr.produced[j] + ptr.recipeExecuteData.productCounts[j] > 100
+                                        && buffer[ptr.recipeExecuteData.products[j]] < BUFFER_SIZE)
                                     {
-                                        pool[i].produced[j] -= pool[i].productCounts[j];
-                                        buffer[pool[i].products[j]] += pool[i].productCounts[j];
+                                        ptr.produced[j] -= ptr.recipeExecuteData.productCounts[j];
+                                        buffer[ptr.recipeExecuteData.products[j]] += ptr.recipeExecuteData.productCounts[j];
                                     }
                                 }
                                 break;
                             case ERecipeType.Assemble:
                                 for (int j = 0; j < len; j++)
                                 {
-                                    if (pool[i].produced[j] > pool[i].productCounts[j] * 9
-                                        && buffer[pool[i].products[j]] < BUFFER_SIZE)
+                                    if (ptr.produced[j] > ptr.recipeExecuteData.productCounts[j] * 9
+                                        && buffer[ptr.recipeExecuteData.products[j]] < BUFFER_SIZE)
                                     {
-                                        pool[i].produced[j] -= pool[i].productCounts[j];
-                                        buffer[pool[i].products[j]] += pool[i].productCounts[j];
+                                        ptr.produced[j] -= ptr.recipeExecuteData.productCounts[j];
+                                        buffer[ptr.recipeExecuteData.products[j]] += ptr.recipeExecuteData.productCounts[j];
                                     }
                                 }
                                 break;
                             default:
                                 for (int j = 0; j < len; j++)
                                 {
-                                    if (pool[i].produced[j] > pool[i].productCounts[j] * 19
-                                        && buffer[pool[i].products[j]] < BUFFER_SIZE)
+                                    if (ptr.produced[j] > ptr.recipeExecuteData.productCounts[j] * 19
+                                        && buffer[ptr.recipeExecuteData.products[j]] < BUFFER_SIZE)
                                     {
-                                        pool[i].produced[j] -= pool[i].productCounts[j];
-                                        buffer[pool[i].products[j]] += pool[i].productCounts[j];
+                                        ptr.produced[j] -= ptr.recipeExecuteData.productCounts[j];
+                                        buffer[ptr.recipeExecuteData.products[j]] += ptr.recipeExecuteData.productCounts[j];
                                     }
                                 }
                                 break;
                         }
                     }
-                    for (int j = 0; j < pool[i].requireCounts.Length; j++)
+                    for (int j = 0; j < ptr.recipeExecuteData.requireCounts.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int itemId = pool[i].needs[j];
-                            _serve(itemId, produced, ref pool[i].served[j], 3 * pool[i].requireCounts[j], ref count);
+                            int itemId = ptr.needs[j];
+                            _serve(itemId, produced, ref ptr.served[j], 3 * ptr.recipeExecuteData.requireCounts[j], ref count);
                             if (spray)
                             {
                                 inc -= count * INC_ABILITY;
-                                pool[i].incServed[j] += INC_ABILITY * count;
+                                ptr.incServed[j] += INC_ABILITY * count;
                             }
                         }
                     }
@@ -192,8 +194,9 @@ namespace PlanetWormhole.Data
             StationComponent[] pool = factory.transport.stationPool;
             for (int i = 1; i < factory.transport.stationCursor; i++)
             {
-                if (pool[i] != null && pool[i].id == i && pool[i].storage != null)
-                {
+                var ptr = pool[i];
+                if (ptr != null && ptr.id == i && ptr.storage != null)
+                {                    
                     StationStore[] storage = pool[i].storage;
                     for (int j = 0; j < storage.Length; j++)
                     {
@@ -210,9 +213,9 @@ namespace PlanetWormhole.Data
                             }
                         }
                     }
-                    if (pool[i].needs[5] == WARPER && factory.gameData.history.TechUnlocked(SHIP_ENGINE_4))
+                    if (ptr.needs[5] == WARPER && factory.gameData.history.TechUnlocked(SHIP_ENGINE_4))
                     {
-                        served[WARPER] += _positive(pool[i].warperMaxCount - pool[i].warperCount);
+                        served[WARPER] += _positive(ptr.warperMaxCount - ptr.warperCount);
                     }
                 }
             }
@@ -225,20 +228,22 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.transport.stationCursor; k++)
             {
                 int i = (int)((r + k) % (factory.transport.stationCursor - 1)) + 1;
-                if (pool[i] != null && pool[i].id == i && pool[i].storage != null)
+                var ptr = pool[i];
+                if (ptr != null && ptr.id == i && ptr.storage != null)
                 {
-                    if (pool[i].needs[5] == WARPER && factory.gameData.history.TechUnlocked(SHIP_ENGINE_4))
+                    if (ptr.needs[5] == WARPER && factory.gameData.history.TechUnlocked(SHIP_ENGINE_4))
                     {
-                        _serve(WARPER, produced, ref pool[i].warperCount, pool[i].warperMaxCount, ref count);
+                        _serve(WARPER, produced, ref ptr.warperCount, ptr.warperMaxCount, ref count);
                     }
                 }
             }
             for (int k = 1; k < factory.transport.stationCursor; k++)
             {
                 int i = (int)((r + k) % (factory.transport.stationCursor - 1)) + 1;
-                if (pool[i] != null && pool[i].id == i && pool[i].storage != null)
+                var ptr = pool[i];
+                if (ptr != null && ptr.id == i && ptr.storage != null)
                 {
-                    StationStore[] storage = pool[i].storage;
+                    StationStore[] storage = ptr.storage;
                     for (int j = 0; j < storage.Length; j++)
                     {
                         if (storage[j].itemId > 0)
@@ -265,36 +270,41 @@ namespace PlanetWormhole.Data
             PowerGeneratorComponent[] pool = factory.powerSystem.genPool;
             for (int i = 1; i < factory.powerSystem.genCursor; i++)
             {
-                if (pool[i].id == i)
+                if (pool[i].id == i)                
                 {
-                    if (pool[i].catalystId > 0 && factory.gameData.history.TechUnlocked(IONOSPHERIC_TECH))
+                    ref var ptr = ref pool[i];
+                    if (ptr.catalystId > 0 && factory.gameData.history.TechUnlocked(IONOSPHERIC_TECH))
                     {
-                        int count = _positive((72000 - pool[i].catalystPoint) / 3600);
+                        int count = _positive((72000 - ptr.catalystPoint) / 3600);
                         sumSpray += count;
-                        served[pool[i].catalystId] += count;
-                        if (pool[i].productId > 0)
+                        served[ptr.catalystId] += count;
+                        if (ptr.productId > 0)
                         {
-                            produced[pool[i].productId] += (int) pool[i].productCount;
+                            produced[ptr.productId] += (int) ptr.productCount;
                         }
                     }
-                    int[] fuelNeeds = ItemProto.fuelNeeds[pool[i].fuelMask];
-                    if (pool[i].fuelId > 0 || (fuelNeeds != null && fuelNeeds.Length > 0))
+                    int[] fuelNeeds = ItemProto.fuelNeeds[ptr.fuelMask];
+                    if (ptr.fuelId > 0 || (fuelNeeds != null && fuelNeeds.Length > 0))
                     {
                         int itemId;
-                        if (pool[i].fuelId > 0)
+                        if (ptr.fuelId > 0)
                         {
-                            itemId = pool[i].fuelId;
+                            itemId = ptr.fuelId;
+                        }
+                        else if (ptr.curFuelId > 0)
+                        {
+                            itemId = ptr.curFuelId;
                         }
                         else if (fuelNeeds.Length > 0)
                         {
                             itemId = fuelNeeds[0];
-                            pool[i].SetNewFuel(itemId, 0, 0);
+                            ptr.SetNewFuel(itemId, 0, 0);
                         }
                         else
                         {
                             continue;
                         }
-                        int count = _positive(10 - pool[i].fuelCount);
+                        int count = _positive(10 - ptr.fuelCount);
                         sumSpray += count;
                         served[itemId] += count;
                     }
@@ -303,16 +313,17 @@ namespace PlanetWormhole.Data
             PowerExchangerComponent[] excPool = factory.powerSystem.excPool;
             for (int i = 1; i < factory.powerSystem.excCursor; i++)
             {
-                if (excPool[i].id == i && excPool[i].fullId > 0 && excPool[i].emptyId > 0)
+                ref var ptr = ref excPool[i];
+                if (ptr.id == i && ptr.fullId > 0 && ptr.emptyId > 0)
                 {
-                    if (_float_equal(excPool[i].targetState, 1.0f))
+                    if (_float_equal(ptr.targetState, 1.0f))
                     {
-                        produced[excPool[i].fullId] += excPool[i].fullCount;
-                        served[excPool[i].emptyId] += _positive(PowerExchangerComponent.maxCount - excPool[i].emptyCount);
-                    } else if (_float_equal(excPool[i].targetState, -1.0f))
+                        produced[ptr.fullId] += ptr.fullCount;
+                        served[ptr.emptyId] += _positive(PowerExchangerComponent.maxCount - ptr.emptyCount);
+                    } else if (_float_equal(ptr.targetState, -1.0f))
                     {
-                        produced[excPool[i].emptyId] += excPool[i].emptyCount;
-                        served[excPool[i].fullId] += _positive(PowerExchangerComponent.maxCount - excPool[i].fullCount);
+                        produced[ptr.emptyId] += ptr.emptyCount;
+                        served[ptr.fullId] += _positive(PowerExchangerComponent.maxCount - ptr.fullCount);
                     }
                 }
             }
@@ -325,45 +336,46 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.powerSystem.genCursor; k++)
             {
                 int i = (int)((r + k) % (factory.powerSystem.genCursor - 1)) + 1;
-                if (pool[i].id == i)
-                {
-                    if (pool[i].catalystId > 0 && factory.gameData.history.TechUnlocked(IONOSPHERIC_TECH))
+                ref var ptr = ref pool[i];
+                if (ptr.id == i)
+                {                    
+                    if (ptr.catalystId > 0 && factory.gameData.history.TechUnlocked(IONOSPHERIC_TECH))
                     {
-                        int itemId = pool[i].catalystId;
+                        int itemId = ptr.catalystId;
                         if (produced[itemId] > 0)
                         {
-                            count = _positive(Math.Min((72000 - pool[i].catalystPoint) / 3600, produced[itemId]));
+                            count = _positive(Math.Min((72000 - ptr.catalystPoint) / 3600, produced[itemId]));
                             produced[itemId] -= count;
-                            pool[i].catalystPoint += count * 3600;
+                            ptr.catalystPoint += count * 3600;
                             if (spray)
                             {
                                 inc -= count * INC_ABILITY;
-                                pool[i].catalystIncPoint += count * 3600 * INC_ABILITY;
+                                ptr.catalystIncPoint += count * 3600 * INC_ABILITY;
                             }
                         }
-                        if (pool[i].productId > 0)
+                        if (ptr.productId > 0)
                         {
-                            itemId = pool[i].productId;
+                            itemId = ptr.productId;
                             if (served[itemId] > 0)
                             {
-                                count = Math.Min((int)pool[i].productCount, served[itemId]);
+                                count = Math.Min((int)ptr.productCount, served[itemId]);
                                 served[itemId] -= count;
-                                pool[i].productCount -= count;
+                                ptr.productCount -= count;
                             }
                         }
                     }
-                    if (pool[i].fuelId > 0)
+                    if (ptr.fuelId > 0)
                     {
-                        int itemId = pool[i].fuelId;
+                        int itemId = ptr.fuelId;
                         if (produced[itemId] > 0)
                         {
-                            count = _positive(Math.Min(10 - pool[i].fuelCount, produced[itemId]));
+                            count = _positive(Math.Min(10 - ptr.fuelCount, produced[itemId]));
                             produced[itemId] -= count;
-                            pool[i].fuelCount += (short) count;
+                            ptr.fuelCount += (short) count;
                             if (spray)
                             {
                                 inc -= count * INC_ABILITY;
-                                pool[i].fuelInc += (short) (INC_ABILITY * count);
+                                ptr.fuelInc += (short) (INC_ABILITY * count);
                             }
                         }
                     }
@@ -373,38 +385,39 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.powerSystem.excCursor; k++)
             {
                 int i = (int)((r + k) % (factory.powerSystem.excCursor - 1)) + 1;
-                if (excPool[i].id == i && excPool[i].fullId > 0 && excPool[i].emptyId > 0)
+                ref var ptr = ref excPool[i];
+                if (ptr.id == i && ptr.fullId > 0 && ptr.emptyId > 0)
                 {
-                    int fullIndex = excPool[i].fullId;
-                    int emptyIndex = excPool[i].emptyId;
-                    if (_float_equal(excPool[i].targetState, 1.0f))
+                    int fullIndex = ptr.fullId;
+                    int emptyIndex = ptr.emptyId;
+                    if (_float_equal(ptr.targetState, 1.0f))
                     {
                         if (served[fullIndex] > 0)
                         {
-                            count = Math.Min(excPool[i].fullCount, served[fullIndex]);
+                            count = Math.Min(ptr.fullCount, served[fullIndex]);
                             served[fullIndex] -= count;
-                            excPool[i].fullCount -= (short) count;
+                            ptr.fullCount -= (short) count;
                         }
                         if (produced[emptyIndex] > 0)
                         {
-                            count = _positive(Math.Min(PowerExchangerComponent.maxCount - excPool[i].emptyCount, produced[emptyIndex]));
+                            count = _positive(Math.Min(PowerExchangerComponent.maxCount - ptr.emptyCount, produced[emptyIndex]));
                             produced[emptyIndex] -= count;
-                            excPool[i].emptyCount += (short) count;
+                            ptr.emptyCount += (short) count;
                         }
                     }
-                    else if (_float_equal(excPool[i].targetState, -1.0f))
+                    else if (_float_equal(ptr.targetState, -1.0f))
                     {
                         if (served[emptyIndex] > 0)
                         {
-                            count = Math.Min(excPool[i].emptyCount, served[emptyIndex]);
+                            count = Math.Min(ptr.emptyCount, served[emptyIndex]);
                             served[emptyIndex] -= count;
-                            excPool[i].emptyCount -= (short)count;
+                            ptr.emptyCount -= (short)count;
                         }
                         if (produced[fullIndex] > 0)
                         {
-                            count = _positive(Math.Min(PowerExchangerComponent.maxCount - excPool[i].fullCount, produced[fullIndex]));
+                            count = _positive(Math.Min(PowerExchangerComponent.maxCount - ptr.fullCount, produced[fullIndex]));
                             produced[fullIndex] -= count;
-                            excPool[i].fullCount += (short)count;
+                            ptr.fullCount += (short)count;
                         }
                     }
                 }
@@ -418,9 +431,10 @@ namespace PlanetWormhole.Data
             {
                 if (pool[i].id == i)
                 {
-                    if (pool[i].productId > 0)
+                    ref var ptr = ref pool[i];
+                    if (ptr.productId > 0)
                     {
-                        produced[pool[i].productId] += pool[i].productCount;
+                        produced[ptr.productId] += ptr.productCount;
                     }
                 }
             }
@@ -435,10 +449,11 @@ namespace PlanetWormhole.Data
                 int i = (int)((r + k) % (factory.factorySystem.minerCursor - 1)) + 1;
                 if (pool[i].id == i)
                 {
-                    if (pool[i].productId > 0)
+                    ref var ptr = ref pool[i];
+                    if (ptr.productId > 0)
                     {
-                        int itemId = pool[i].productId;
-                        _produce(itemId, served, ref pool[i].productCount, ref count);
+                        int itemId = ptr.productId;
+                        _produce(itemId, served, ref ptr.productCount, ref count);
                     }
                 }
             }
@@ -449,34 +464,35 @@ namespace PlanetWormhole.Data
             LabComponent[] pool = factory.factorySystem.labPool;
             for (int i = 1; i < factory.factorySystem.labCursor; i++)
             {
-                if (pool[i].id == i && !pool[i].researchMode && pool[i].recipeId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && !ptr.researchMode && ptr.recipeId > 0)
                 {
-                    if (pool[i].productCounts != null && pool[i].productCounts.Length > 0)
+                    if (ptr.recipeExecuteData.productCounts != null && ptr.recipeExecuteData.productCounts.Length > 0)
                     {
-                        for (int j = 0; j < pool[i].productCounts.Length; j++)
+                        for (int j = 0; j < ptr.recipeExecuteData.productCounts.Length; j++)
                         {
-                            produced[pool[i].products[j]] += pool[i].produced[j];
+                            produced[ptr.recipeExecuteData.products[j]] += ptr.produced[j];
                         }
                     }
-                    for (int j = 0; j < pool[i].needs.Length; j++)
+                    for (int j = 0; j < ptr.needs.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int count = _positive(4 - pool[i].served[j]);
+                            int count = _positive(4 - ptr.served[j]);
                             sumSpray += count;
-                            served[pool[i].needs[j]] += count;
+                            served[ptr.needs[j]] += count;
                         }
                     }
                 }
-                if (pool[i].id == i && pool[i].researchMode)
+                if (ptr.id == i && ptr.researchMode)
                 {
-                    for (int j = 0; j < pool[i].needs.Length; j++)
+                    for (int j = 0; j < ptr.needs.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int count = _positive((36000 - pool[i].matrixServed[j]) / 3600);
+                            int count = _positive((36000 - ptr.matrixServed[j]) / 3600);
                             sumSpray += count;
-                            served[pool[i].needs[j]] += count;
+                            served[ptr.needs[j]] += count;
                         }
                     }
                 }
@@ -491,46 +507,47 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.factorySystem.labCursor; k++)
             {
                 int i = (int)((r + k) % (factory.factorySystem.labCursor - 1)) + 1;
-                if (pool[i].id == i && !pool[i].researchMode && pool[i].recipeId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && !ptr.researchMode && ptr.recipeId > 0)
                 {
-                    if (pool[i].productCounts != null && pool[i].productCounts.Length > 0)
+                    if (ptr.recipeExecuteData.productCounts != null && ptr.recipeExecuteData.productCounts.Length > 0)
                     {
-                        for (int j = 0; j < pool[i].productCounts.Length; j++)
+                        for (int j = 0; j < ptr.recipeExecuteData.productCounts.Length; j++)
                         {
-                            int itemId = pool[i].products[j];
-                            _produce(itemId, served, ref pool[i].produced[j], ref count);
+                            int itemId = ptr.recipeExecuteData.products[j];
+                            _produce(itemId, served, ref ptr.produced[j], ref count);
                         }
                     }
-                    for (int j = 0; j < pool[i].needs.Length; j++)
+                    for (int j = 0; j < ptr.needs.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int itemId = pool[i].needs[j];
-                            _serve(itemId, produced, ref pool[i].served[j], 4, ref count);
+                            int itemId = ptr.needs[j];
+                            _serve(itemId, produced, ref ptr.served[j], 4, ref count);
                             if (spray)
                             {
                                 inc -= count * INC_ABILITY;
-                                pool[i].incServed[j] += INC_ABILITY * count;
+                                ptr.incServed[j] += INC_ABILITY * count;
                             }
                         }
                     }
                 }
-                if (pool[i].id == i && pool[i].researchMode)
+                if (ptr.id == i && ptr.researchMode)
                 {
-                    for (int j = 0; j < pool[i].needs.Length; j++)
+                    for (int j = 0; j < ptr.needs.Length; j++)
                     {
-                        if (pool[i].needs[j] > 0)
+                        if (ptr.needs[j] > 0)
                         {
-                            int itemId = pool[i].needs[j];
+                            int itemId = ptr.needs[j];
                             if (produced[itemId] > 0)
                             {
-                                count = _positive(Math.Min((36000 - pool[i].matrixServed[j]) / 3600, produced[itemId]));
+                                count = _positive(Math.Min((36000 - ptr.matrixServed[j]) / 3600, produced[itemId]));
                                 produced[itemId] -= count;
-                                pool[i].matrixServed[j] += count * 3600;
+                                ptr.matrixServed[j] += count * 3600;
                                 if (spray)
                                 {
                                     inc -= count * INC_ABILITY ;
-                                    pool[i].matrixIncServed[j] += INC_ABILITY * count * 3600;
+                                    ptr.matrixIncServed[j] += INC_ABILITY * count * 3600;
                                 }
                             }
                         }
@@ -544,11 +561,12 @@ namespace PlanetWormhole.Data
             EjectorComponent[] pool = factory.factorySystem.ejectorPool;
             for (int i = 1; i < factory.factorySystem.ejectorCursor; i++)
             {
-                if (pool[i].id == i && pool[i].bulletId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && ptr.bulletId > 0)
                 {
-                    int count = _positive(20 - pool[i].bulletCount);
+                    int count = _positive(20 - ptr.bulletCount);
                     sumSpray += count;
-                    served[pool[i].bulletId] += count;
+                    served[ptr.bulletId] += count;
                 }
             }
         }
@@ -560,14 +578,15 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.factorySystem.ejectorCursor; k++)
             {
                 int i = (int)((r + k) % (factory.factorySystem.ejectorCursor - 1)) + 1;
-                if (pool[i].id == i && pool[i].bulletId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && ptr.bulletId > 0)
                 {
-                    int itemId = pool[i].bulletId;
-                    _serve(itemId, produced, ref pool[i].bulletCount, 20, ref count);
+                    int itemId = ptr.bulletId;
+                    _serve(itemId, produced, ref ptr.bulletCount, 20, ref count);
                     if (spray)
                     {
                         inc -= count * INC_ABILITY;
-                        pool[i].bulletInc += INC_ABILITY * count;
+                        ptr.bulletInc += INC_ABILITY * count;
                     }
                 }
             }
@@ -578,11 +597,12 @@ namespace PlanetWormhole.Data
             SiloComponent[] pool = factory.factorySystem.siloPool;
             for (int i = 1; i < factory.factorySystem.siloCursor; i++)
             {
-                if (pool[i].id == i && pool[i].bulletId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && ptr.bulletId > 0)
                 {
-                    int count = _positive(20 - pool[i].bulletCount);
+                    int count = _positive(20 - ptr.bulletCount);
                     sumSpray += count;
-                    served[pool[i].bulletId] += count;
+                    served[ptr.bulletId] += count;
                 }
             }
         }
@@ -594,14 +614,15 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.factorySystem.siloCursor; k++)
             {
                 int i = (int)((r + k) % (factory.factorySystem.siloCursor - 1)) + 1;
-                if (pool[i].id == i && pool[i].bulletId > 0)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i && ptr.bulletId > 0)
                 {
-                    int itemId = pool[i].bulletId;
-                    _serve(itemId, produced, ref pool[i].bulletCount, 20, ref count);
+                    int itemId = ptr.bulletId;
+                    _serve(itemId, produced, ref ptr.bulletCount, 20, ref count);
                     if (spray)
                     {
                         inc -= count * INC_ABILITY;
-                        pool[i].bulletInc += INC_ABILITY * count;
+                        ptr.bulletInc += INC_ABILITY * count;
                     }
                 }
             }
@@ -786,36 +807,37 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.factorySystem.fractionatorCursor; k++)
             {
                 int i = (int)((r + k) % (factory.factorySystem.fractionatorCursor - 1)) + 1;
-                if (pool[i].id == i)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i)
                 {
-                    if (pool[i].fluidId > 0)
+                    if (ptr.fluidId > 0)
                     {
-                        int itemId = pool[i].fluidId;
-                        _serve(itemId, produced, ref pool[i].fluidInputCount, 4 * pool[i].fluidInputMax, ref count);
-                        pool[i].fluidInputCargoCount += .25f * count;
+                        int itemId = ptr.fluidId;
+                        _serve(itemId, produced, ref ptr.fluidInputCount, 4 * ptr.fluidInputMax, ref count);
+                        ptr.fluidInputCargoCount += .25f * count;
                         if (spray)
                         {
                             inc -= count * INC_ABILITY;
-                            pool[i].fluidInputInc += count * INC_ABILITY;
+                            ptr.fluidInputInc += count * INC_ABILITY;
                         }
-                        if (buffer[itemId] < BUFFER_SIZE && pool[i].fluidOutputCount > pool[i].fluidOutputMax / 2)
+                        if (buffer[itemId] < BUFFER_SIZE && ptr.fluidOutputCount > ptr.fluidOutputMax / 2)
                         {
-                            buffer[itemId] += pool[i].fluidOutputCount;
-                            pool[i].fluidOutputCount = 0;
+                            buffer[itemId] += ptr.fluidOutputCount;
+                            ptr.fluidOutputCount = 0;
                         } else
                         {
-                            _produce(itemId, served, ref pool[i].fluidOutputCount, ref count);
+                            _produce(itemId, served, ref ptr.fluidOutputCount, ref count);
                         }
-                        int incAdd = _split_inc(pool[i].fluidOutputInc, count);
+                        int incAdd = _split_inc(ptr.fluidOutputInc, count);
                         inc += incAdd;
-                        pool[i].fluidOutputInc -= incAdd;
+                        ptr.fluidOutputInc -= incAdd;
                     }
-                    if (pool[i].productId > 1)
+                    if (ptr.productId > 1)
                     {
-                        int itemId = pool[i].productId;
-                        pool[i].productOutputCount -= 1;
-                        _produce(itemId, served, ref pool[i].productOutputCount, ref count);
-                        pool[i].productOutputCount += 1;
+                        int itemId = ptr.productId;
+                        ptr.productOutputCount -= 1;
+                        _produce(itemId, served, ref ptr.productOutputCount, ref count);
+                        ptr.productOutputCount += 1;
                     }
                 }
             }
@@ -827,12 +849,13 @@ namespace PlanetWormhole.Data
             int count = 0;
             for (int k = 1; k < factory.defenseSystem.turrets.cursor; k++)
             {
-                if (pool[k].id == k)
+                ref var ptr = ref pool[k];
+                if (ptr.id == k)
                 {
-                    if (pool[k].itemId > 0)
+                    if (ptr.itemId > 0)
                     {
-                        int itemId = pool[k].itemId;
-                        count = _positive(5 - pool[k].itemCount);
+                        int itemId = ptr.itemId;
+                        count = _positive(5 - ptr.itemCount);
                         served[itemId] += count;
                         sumSpray += count;
                     }
@@ -847,18 +870,19 @@ namespace PlanetWormhole.Data
             for (int k = 1; k < factory.defenseSystem.turrets.cursor; k++)
             {
                 int i = (int)((r + k) % (factory.defenseSystem.turrets.cursor - 1)) + 1;
-                if (pool[i].id == i)
+                ref var ptr = ref pool[i];
+                if (ptr.id == i)
                 {
-                    if (pool[i].itemId > 0)
+                    if (ptr.itemId > 0)
                     {
-                        int itemId = pool[i].itemId;
-                        int itemCount = pool[i].itemCount;
+                        int itemId = ptr.itemId;
+                        int itemCount = ptr.itemCount;
                         _serve(itemId, produced, ref itemCount, 5, ref count);
-                        pool[i].itemCount = (short)itemCount;
+                        ptr.itemCount = (short)itemCount;
                         if (spray)
                         {
                             inc -= count * INC_ABILITY;
-                            pool[i].itemInc += (short)(count * INC_ABILITY);
+                            ptr.itemInc += (short)(count * INC_ABILITY);
                         }
                     }
                 }

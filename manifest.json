@@ -1,7 +1,7 @@
 {
 	"name": "PlanetWormhole",
-	"version_number": "2.0.1",
-	"website_url": "https://github.com/essium/PlanetWormhole",
-	"description": "(Updated version) Transfer items within each planet 行星虫洞:自动运输行星内的货物",
-	"dependencies":["xiaoye97-BepInEx-5.4.17"]
+	"version_number": "2.0.2",
+	"website_url": "https://github.com/starfi5h/PlanetWormhole",
+	"description": "(Updated version) Auto distribute and transfer items within each planet. You don't need belts and sorters anymore! 行星虫洞:自动配送行星内的货物。再也不需要传送带和爪子了!",
+	"dependencies": [ "xiaoye97-BepInEx-5.4.17" ]
 }
