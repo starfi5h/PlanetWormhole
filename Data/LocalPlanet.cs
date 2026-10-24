@@ -350,7 +350,6 @@ namespace PlanetWormhole.Data
                             if (spray)
                             {
                                 inc -= count * INC_ABILITY;
-                                ptr.catalystIncPoint += count * 3600 * INC_ABILITY;
                             }
                         }
                         if (ptr.productId > 0)

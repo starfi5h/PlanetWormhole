@@ -52,6 +52,10 @@ PlanetWormhole operates by intercepting the game’s logic at the end of each fa
 
 ## ChangeLog
 
+### 2.0.3
+
+Fix for game 0.10.35.29145
+
 ### 2.0.2
 
 Fix for game 0.10.34.28392
