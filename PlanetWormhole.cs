@@ -21,6 +21,8 @@ namespace PlanetWormhole
         private static ManualLogSource logger;
 
         private static ConfigEntry<bool> enableInterstellar;
+        /// <summary>MK3 缺货时是否回退使用 MK2/MK1 增产剂（默认关闭，保持原版行为）</summary>
+        private static ConfigEntry<bool> enableLowerTierProliferator;
         private Harmony harmony;
 
         [HarmonyPostfix]
@@ -59,8 +61,13 @@ namespace PlanetWormhole
             for (int i = 0; i < __instance.gameData.factoryCount; i++)
             {
                 if (i > planetWormhole.Count || planetWormhole[i].consumedProliferator <= 0) continue;
-                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferator;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK1] += planetWormhole[i].consumedProliferatorMk1;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK2] += planetWormhole[i].consumedProliferatorMk2;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferatorMk3;
                 planetWormhole[i].consumedProliferator = 0;
+                planetWormhole[i].consumedProliferatorMk1 = 0;
+                planetWormhole[i].consumedProliferatorMk2 = 0;
+                planetWormhole[i].consumedProliferatorMk3 = 0;
             }
         }
 
@@ -71,8 +78,13 @@ namespace PlanetWormhole
             for (int i = (threadOrdinal + 3) % threadCount; i < __instance.gameData.factoryCount; i += threadCount)
             {
                 if (i > planetWormhole.Count || planetWormhole[i].consumedProliferator <= 0) continue;
-                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferator;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK1] += planetWormhole[i].consumedProliferatorMk1;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK2] += planetWormhole[i].consumedProliferatorMk2;
+                __instance.factoryStatPool[i].consumeRegister[PROLIFERATOR_MK3] += planetWormhole[i].consumedProliferatorMk3;
                 planetWormhole[i].consumedProliferator = 0;
+                planetWormhole[i].consumedProliferatorMk1 = 0;
+                planetWormhole[i].consumedProliferatorMk2 = 0;
+                planetWormhole[i].consumedProliferatorMk3 = 0;
             }
         }
 
@@ -100,6 +112,13 @@ namespace PlanetWormhole
         private void BindConfig()
         {
             enableInterstellar = Config.Bind("Config", "EnableInterstellar", false, "enable auto interstellar transportation");
+            enableLowerTierProliferator = Config.Bind("Config", "EnableLowerTierProliferator", false, "use MK2/MK1 proliferator when MK3 is out of stock");
+        }
+
+        /// <summary>获取是否启用低档位增产剂（MK2/MK1）回补</summary>
+        public static bool EnableLowerTierProliferator()
+        {
+            return enableLowerTierProliferator.Value;
         }
 
         public static bool EnableInterstellar()
