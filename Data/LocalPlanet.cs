@@ -12,8 +12,16 @@ namespace PlanetWormhole.Data
         public int[] buffer;
         public int inc;
         public int consumedProliferator;
+        /// <summary>本周期 MK1 消耗量（供生产统计分档）</summary>
+        public int consumedProliferatorMk1;
+        /// <summary>本周期 MK2 消耗量（供生产统计分档）</summary>
+        public int consumedProliferatorMk2;
+        /// <summary>本周期 MK3 消耗量（供生产统计分档）</summary>
+        public int consumedProliferatorMk3;
         public int sumSpray;
         public bool spray;
+        /// <summary>当前生效的增产剂能力值，由 Spray() 选定档位时更新，各消耗点按此值扣点/发点</summary>
+        public int activeAbility;
         public PlanetFactory factory;
         public Cosmic cosmic;
         public AutoResetEvent completeSignal;
@@ -34,6 +42,7 @@ namespace PlanetWormhole.Data
         {
             Array.Clear(buffer, 0, MAX_ITEM_COUNT);
             inc = 0;
+            activeAbility = INC_ABILITY_MK3;
         }
 
         public void SetFactory(PlanetFactory factory)
@@ -82,6 +91,9 @@ namespace PlanetWormhole.Data
             spray = true;
             sumSpray = 0;
             consumedProliferator = 0;
+            consumedProliferatorMk1 = 0;
+            consumedProliferatorMk2 = 0;
+            consumedProliferatorMk3 = 0;
             r = (uint) rng.Value.Next();
         }
 
@@ -180,8 +192,8 @@ namespace PlanetWormhole.Data
                             _serve(itemId, produced, ref ptr.served[j], 3 * ptr.recipeExecuteData.requireCounts[j], ref count);
                             if (spray)
                             {
-                                inc -= count * INC_ABILITY;
-                                ptr.incServed[j] += INC_ABILITY * count;
+                                inc -= count * activeAbility;
+                                ptr.incServed[j] += activeAbility * count;
                             }
                         }
                     }
@@ -349,7 +361,7 @@ namespace PlanetWormhole.Data
                             ptr.catalystPoint += count * 3600;
                             if (spray)
                             {
-                                inc -= count * INC_ABILITY;
+                                inc -= count * activeAbility;
                             }
                         }
                         if (ptr.productId > 0)
@@ -373,8 +385,8 @@ namespace PlanetWormhole.Data
                             ptr.fuelCount += (short) count;
                             if (spray)
                             {
-                                inc -= count * INC_ABILITY;
-                                ptr.fuelInc += (short) (INC_ABILITY * count);
+                                inc -= count * activeAbility;
+                                ptr.fuelInc += (short) (activeAbility * count);
                             }
                         }
                     }
@@ -525,8 +537,8 @@ namespace PlanetWormhole.Data
                             _serve(itemId, produced, ref ptr.served[j], 4, ref count);
                             if (spray)
                             {
-                                inc -= count * INC_ABILITY;
-                                ptr.incServed[j] += INC_ABILITY * count;
+                                inc -= count * activeAbility;
+                                ptr.incServed[j] += activeAbility * count;
                             }
                         }
                     }
@@ -545,8 +557,8 @@ namespace PlanetWormhole.Data
                                 ptr.matrixServed[j] += count * 3600;
                                 if (spray)
                                 {
-                                    inc -= count * INC_ABILITY ;
-                                    ptr.matrixIncServed[j] += INC_ABILITY * count * 3600;
+                                    inc -= count * activeAbility ;
+                                    ptr.matrixIncServed[j] += activeAbility * count * 3600;
                                 }
                             }
                         }
@@ -584,8 +596,8 @@ namespace PlanetWormhole.Data
                     _serve(itemId, produced, ref ptr.bulletCount, 20, ref count);
                     if (spray)
                     {
-                        inc -= count * INC_ABILITY;
-                        ptr.bulletInc += INC_ABILITY * count;
+                        inc -= count * activeAbility;
+                        ptr.bulletInc += activeAbility * count;
                     }
                 }
             }
@@ -620,8 +632,8 @@ namespace PlanetWormhole.Data
                     _serve(itemId, produced, ref ptr.bulletCount, 20, ref count);
                     if (spray)
                     {
-                        inc -= count * INC_ABILITY;
-                        ptr.bulletInc += INC_ABILITY * count;
+                        inc -= count * activeAbility;
+                        ptr.bulletInc += activeAbility * count;
                     }
                 }
             }
@@ -816,8 +828,8 @@ namespace PlanetWormhole.Data
                         ptr.fluidInputCargoCount += .25f * count;
                         if (spray)
                         {
-                            inc -= count * INC_ABILITY;
-                            ptr.fluidInputInc += count * INC_ABILITY;
+                            inc -= count * activeAbility;
+                            ptr.fluidInputInc += count * activeAbility;
                         }
                         if (buffer[itemId] < BUFFER_SIZE && ptr.fluidOutputCount > ptr.fluidOutputMax / 2)
                         {
@@ -880,32 +892,55 @@ namespace PlanetWormhole.Data
                         ptr.itemCount = (short)itemCount;
                         if (spray)
                         {
-                            inc -= count * INC_ABILITY;
-                            ptr.itemInc += (short)(count * INC_ABILITY);
+                            inc -= count * activeAbility;
+                            ptr.itemInc += (short)(count * activeAbility);
                         }
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// 虚拟喷涂补点：有 MK3 库存时只使用 MK3（原版行为）；
+        /// 仅当开关开启且无 MK3 库存时，按 MK2、MK1 的优先级回退补点。
+        /// </summary>
         private void Spray()
         {
-            if (inc < sumSpray * INC_ABILITY)
+            if (produced[PROLIFERATOR_MK3] > 0)
             {
-                if (produced[PROLIFERATOR_MK3] > 0)
-                {
-                    int count = Math.Min(
-                        (sumSpray * INC_ABILITY - inc - 1) / (INC_SPRAY_TIMES + EXTRA_INC_SPRAY_TIMES - 1) / INC_ABILITY + 1
-                        , produced[PROLIFERATOR_MK3]);
-                    inc += count * (INC_SPRAY_TIMES + EXTRA_INC_SPRAY_TIMES - 1) * INC_ABILITY;
-                    produced[PROLIFERATOR_MK3] -= count;
-                    served[PROLIFERATOR_MK3] += count;
-                    consumedProliferator += count;
-                }
+                SprayTier(PROLIFERATOR_MK3, INC_SPRAY_TIMES_MK3, EXTRA_INC_SPRAY_TIMES_MK3, INC_ABILITY_MK3, ref consumedProliferatorMk3);
+            }
+            else if (PlanetWormhole.EnableLowerTierProliferator() && produced[PROLIFERATOR_MK2] > 0)
+            {
+                SprayTier(PROLIFERATOR_MK2, INC_SPRAY_TIMES_MK2, EXTRA_INC_SPRAY_TIMES_MK2, INC_ABILITY_MK2, ref consumedProliferatorMk2);
+            }
+            else if (PlanetWormhole.EnableLowerTierProliferator() && produced[PROLIFERATOR_MK1] > 0)
+            {
+                SprayTier(PROLIFERATOR_MK1, INC_SPRAY_TIMES_MK1, EXTRA_INC_SPRAY_TIMES_MK1, INC_ABILITY_MK1, ref consumedProliferatorMk1);
             }
             if (inc < 1)
             {
                 spray = false;
+            }
+        }
+
+        /// <summary>
+        /// 按指定档位参数执行原版补点公式：当全局点数不足以覆盖本周期需求时，
+        /// 消耗库存增产剂补点，同步更新当前生效能力值，并登记总消耗与分档消耗。
+        /// </summary>
+        private void SprayTier(int itemId, int sprayTimes, int extraSprayTimes, int ability, ref int tierConsumed)
+        {
+            if (inc < sumSpray * ability)
+            {
+                activeAbility = ability;
+                int count = Math.Min(
+                    (sumSpray * ability - inc - 1) / (sprayTimes + extraSprayTimes - 1) / ability + 1
+                    , produced[itemId]);
+                inc += count * (sprayTimes + extraSprayTimes - 1) * ability;
+                produced[itemId] -= count;
+                served[itemId] += count;
+                consumedProliferator += count;
+                tierConsumed += count;
             }
         }
     }
